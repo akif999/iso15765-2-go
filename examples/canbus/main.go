@@ -8,7 +8,7 @@ import (
 
 func main() {
 	// This program just behaving as gateway.
-	var rxIDs map[uint16]struct{}
+	rxIDs := map[uint16]struct{}{}
 	for i := 0x000; i < 0x800; i++ {
 		rxIDs[uint16(i)] = struct{}{}
 	}

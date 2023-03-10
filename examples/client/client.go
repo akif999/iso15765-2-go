@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	var rxIDs map[uint16]struct{}
+	rxIDs := map[uint16]struct{}{}
 	rxIDs[0x6FF] = struct{}{}
 
 	rxHandler := func(canid uint16, dlc uint8, data []byte) error {
