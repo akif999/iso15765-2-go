@@ -30,7 +30,7 @@ var (
 	}
 )
 
-func New(rxIDs map[uint16]struct{}, dialPipe, listenPipe string) *Node {
+func New(rxIDs map[uint16]struct{}, dialPipe, listenPipe string, handler rxHandler) *Node {
 	n := Node{
 		rxIDs: rxIDs,
 
@@ -39,6 +39,7 @@ func New(rxIDs map[uint16]struct{}, dialPipe, listenPipe string) *Node {
 
 		txMsg: make([]byte, 3+1+8), // canid + dlc + data
 		// rxMsg: make([]byte, 3+1+8),
+		handler: handler,
 	}
 	return &n
 }
@@ -81,10 +82,12 @@ func (n *Node) WaitForReception() error {
 		canid := uint16((uint16(bytes[0]&0x07) << 8) | (uint16(bytes[1]&0xFF) << 0))
 		dlc := bytes[2]
 		data := bytes[3:8]
-		err = n.handler(canid, dlc, data)
+		_, ok := n.rxIDs[canid]
+		if ok {
+			err = n.handler(canid, dlc, data)
+		}
 		if err != nil {
 			return err
 		}
 	}
-	return nil
 }
