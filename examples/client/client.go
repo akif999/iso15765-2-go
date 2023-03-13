@@ -1,38 +1,34 @@
 package main
 
 import (
-	"fmt"
+	"context"
 	"log"
 
-	"github.com/akif999/iso15765-2/examples/vcan"
+	"go.einride.tech/can"
+	"go.einride.tech/can/pkg/candevice"
+	"go.einride.tech/can/pkg/socketcan"
 )
 
 func main() {
-	rxIDs := map[uint16]struct{}{}
-	rxIDs[0x6FF] = struct{}{}
-
-	rxHandler := func(canid uint16, dlc uint8, data []byte) error {
-		fmt.Printf("%03X %01X ", canid, dlc)
-		for i, d := range data {
-			if i == len(data) {
-				fmt.Printf("%02X\n", d)
-			} else {
-				fmt.Printf("%02X ", d)
-			}
-		}
-		return nil
-	}
-	client := vcan.New(rxIDs, `\\.\pipe\canbus_out`, `\\.\pipe\canbus_in`, rxHandler)
-
-	// go func() {
-	// 	for {
-	// 		server.Tx(0x6FF, 8, []byte{0x01, 0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE})
-	// 		time.Sleep(1000 * time.Millisecond)
-	// 	}
-	// }()
-
-	err := client.WaitForReception()
+	d, err := candevice.New("can0")
 	if err != nil {
 		log.Fatal(err)
 	}
+	err = d.SetBitrate(250000)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = d.SetUp()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer d.SetDown()
+
+	conn, err := socketcan.DialContext(context.Background(), "can", "can0")
+	if err != nil {
+		log.Fatal(err)
+	}
+	frame := can.Frame{}
+	tx := socketcan.NewTransmitter(conn)
+	err = tx.TransmitFrame(context.Background(), frame)
 }

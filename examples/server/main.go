@@ -1,30 +1,38 @@
 package main
 
 import (
+	"context"
+	"fmt"
 	"log"
-	"time"
 
-	"github.com/akif999/iso15765-2/examples/vcan"
+	"go.einride.tech/can"
+	"go.einride.tech/can/pkg/candevice"
+	"go.einride.tech/can/pkg/socketcan"
 )
 
 func main() {
-	rxIDs := map[uint16]struct{}{}
-	rxIDs[0x7FF] = struct{}{}
-
-	rxHandler := func(canid uint16, dlc uint8, data []byte) error {
-		return nil
-	}
-	server := vcan.New(rxIDs, `\\.\pipe\canbus_out`, `\\.\pipe\canbus_in`, rxHandler)
-
-	go func() {
-		for {
-			server.Tx(0x6FF, 8, []byte{0x01, 0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE})
-			time.Sleep(1000 * time.Millisecond)
-		}
-	}()
-
-	err := server.WaitForReception()
+	d, err := candevice.New("can0")
 	if err != nil {
 		log.Fatal(err)
+	}
+	err = d.SetBitrate(250000)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = d.SetUp()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer d.SetDown()
+
+	conn, err := socketcan.DialContext(context.Background(), "can", "can0")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	recv := socketcan.NewReceiver(conn)
+	for recv.Receive() {
+		frame := can.Frame{}
+		fmt.Println(frame.String())
 	}
 }
