@@ -15,19 +15,19 @@ const (
 type IDType uint8
 
 const (
-	IDTypeStandard IDType = iota
-	IDTypeExtended
+	IDTypeStandard IDType = 0x04
+	IDTypeExtended IDType = 0x08
 )
 
 type AddressingMode uint8
 
 const (
-	AddressingModeUnkown AddressingMode = iota
-	AddressingModeNormal
-	AddressingModeFixed
-	AddressingModeFixed11
-	AddressingModeExtended
-	AddressingModeExtended29
+	AddressingModeUnkown     AddressingMode = 0x00
+	AddressingModeNormal     AddressingMode = 0x14
+	AddressingModeFixed      AddressingMode = 0x28
+	AddressingModeFixed11    AddressingMode = 0x35
+	AddressingModeExtended   AddressingMode = 0x45
+	AddressingModeExtended29 AddressingMode = 0x59
 )
 
 type PCIType uint8

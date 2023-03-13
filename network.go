@@ -24,7 +24,6 @@ type nRequest struct {
 	FrameFormat FrameFormat
 	nAI         nAI
 	nPCI        nPCI
-	msgSize     uint16
 	msg         []uint8
 }
 
@@ -32,7 +31,6 @@ type nInd struct {
 	FrameFormat FrameFormat
 	nAI         nAI
 	nPCI        nPCI
-	msgSize     uint16
 	msg         []uint8
 }
 

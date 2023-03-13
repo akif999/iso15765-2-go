@@ -11,6 +11,7 @@ type nPCI struct {
 type nPDU struct {
 	messageType MessageType
 	size        uint16
+	nAI         nAI
 	nPCI        nPCI
 	data        []uint8
 }

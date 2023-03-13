@@ -5,3 +5,7 @@ type timer struct {
 	nCr uint32
 	nCs uint32
 }
+
+func timeoutProcess() error {
+	return nil
+}
