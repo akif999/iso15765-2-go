@@ -9,6 +9,12 @@ import (
 	"go.einride.tech/can/pkg/socketcan"
 )
 
+// Run the following command before running this program.
+// $ sudo modprobe can
+// $ sudo modprobe can_raw
+// $ sudo modprobe vcan
+// $ sudo ip link add dev vcan0 type vcan
+// $ sudo ip link set up vcan0
 func main() {
 	frame := can.Frame{
 		ID:         0x546,
@@ -24,7 +30,7 @@ func main() {
 	}
 	defer conn.Close()
 	for {
-	    tx := socketcan.NewTransmitter(conn)
+		tx := socketcan.NewTransmitter(conn)
 		err = tx.TransmitFrame(context.Background(), frame)
 		time.Sleep(1000 * time.Millisecond)
 	}
