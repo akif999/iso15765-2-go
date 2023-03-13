@@ -193,11 +193,11 @@ type Config struct {
 }
 
 type Frame struct {
-	ID          uint32
-	IDType      IDType
-	FrameFormat FrameFormat
-	dlc         uint16
-	data        []uint8
+	ID      uint32
+	IDType  IDType
+	FFormat FrameFormat
+	dlc     uint16
+	data    []uint8
 }
 
 const (
@@ -205,15 +205,15 @@ const (
 )
 
 type ISO15765Node struct {
-	addrMode  AddressingMode
-	idType    IDType
-	in        IOStream
-	out       IOStream
-	flPdu     nPDU
-	callbacks CallBacks
-	cofig     Config
-	timers    timer
-	inQueue   []Frame
+	addrMode AddressingMode
+	idType   IDType
+	in       IOStream
+	out      IOStream
+	flPdu    nPDU
+	cb       CallBacks
+	cfg      Config
+	timers   timer
+	inQueue  []Frame
 }
 
 func New() *ISO15765Node {
