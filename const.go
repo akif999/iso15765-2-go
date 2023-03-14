@@ -22,12 +22,12 @@ const (
 type AddressingMode uint8
 
 const (
-	AddressingModeUnkown     AddressingMode = 0x00
-	AddressingModeNormal     AddressingMode = 0x14
-	AddressingModeFixed      AddressingMode = 0x28
-	AddressingModeFixed11    AddressingMode = 0x35
-	AddressingModeExtended   AddressingMode = 0x45
-	AddressingModeExtended29 AddressingMode = 0x59
+	AddressingModeUnkown   AddressingMode = 0x00
+	AddressingModeNormal   AddressingMode = 0x14
+	AddressingModeFixed    AddressingMode = 0x28
+	AddressingModeMixed11  AddressingMode = 0x35
+	AddressingModeExtended AddressingMode = 0x45
+	AddressingModeMixed29  AddressingMode = 0x59
 )
 
 type PCIType uint8
