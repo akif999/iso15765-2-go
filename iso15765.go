@@ -129,11 +129,3 @@ func (n *ISO15765Node) Process() error {
 	n.processSend()
 	return nil
 }
-
-func (n *ISO15765Node) processRecv(frame Frame) error {
-	return nil
-}
-
-func (n *ISO15765Node) processSend() error {
-	return nil
-}
