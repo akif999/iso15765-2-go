@@ -40,8 +40,8 @@ const (
 type ISO15765Node struct {
 	addrMode AddressingMode
 	idType   IDType
-	recv     IOStream
-	send     IOStream
+	in       IOStream
+	out      IOStream
 	flPdu    nPDU
 	cb       CallBacks
 	cfg      Config
@@ -58,8 +58,8 @@ func New(
 	return &ISO15765Node{
 		addrMode: addrMode,
 		idType:   idType,
-		recv:     IOStream{},
-		send:     IOStream{},
+		in:       IOStream{},
+		out:      IOStream{},
 		flPdu:    nPDU{},
 		cb:       cb,
 		cfg:      cfg,
@@ -102,30 +102,30 @@ func (n *ISO15765Node) Enqueue(frame Frame) error {
 }
 
 func (n *ISO15765Node) Send(frame nRequest) error {
-	if n.send.status != IOStreamStatusIdle {
+	if n.out.status != IOStreamStatusIdle {
 		return fmt.Errorf("send is busy")
 	}
 	if len(frame.msg) > int(ISOMsgSize) {
 		return fmt.Errorf("msgSize is must be equal or less than %d", ISOMsgSize)
 	}
-	n.send.frameFormat = frame.FrameFormat
-	n.send.msgSize = uint16(len(frame.msg))
-	copy(n.send.msg, frame.msg)
-	n.send.nPDU.nAI = frame.nAI
-	n.send.status = IOStreamStatusTXBusy
+	n.out.frameFormat = frame.FrameFormat
+	n.out.msgSize = uint16(len(frame.msg))
+	copy(n.out.msg, frame.msg)
+	n.out.nPDU.nAI = frame.nAI
+	n.out.status = IOStreamStatusTXBusy
 
 	return nil
 }
 
 func (n *ISO15765Node) Process() error {
-	if err := timeoutProcess(); err != nil {
+	if err := timeout(); err != nil {
 		return err
 	}
 	for f := range n.inQueue {
-		if err := n.processRecv(f); err != nil {
+		if err := n.recv(f); err != nil {
 			return err
 		}
 	}
-	n.processSend()
+	n.send()
 	return nil
 }

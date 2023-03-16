@@ -1,5 +1,5 @@
 package iso15765
 
-func (n *ISO15765Node) processSend() error {
+func (n *ISO15765Node) send() error {
 	return nil
 }

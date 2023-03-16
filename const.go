@@ -65,7 +65,7 @@ const (
 type IOStreamStatus uint8
 
 const (
-	IOStreamStatusIdle = iota
+	IOStreamStatusIdle IOStreamStatus = iota
 	IOStreamStatusRXBusy
 	IOStreamStatusTXBusy
 	IOStreamStatusTXReady

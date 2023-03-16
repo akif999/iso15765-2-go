@@ -1,9 +1,10 @@
 package iso15765
 
 type nPCI struct {
-	flowStatus    uint8
+	flowStatus    FlowControlStatus
 	blockSize     uint8
 	squenceNumber uint8
+	stmin         uint8
 	pCIType       PCIType
 	dataLength    uint16
 }

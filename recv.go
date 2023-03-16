@@ -2,8 +2,155 @@ package iso15765
 
 import "fmt"
 
-func (n *ISO15765Node) processRecv(frame Frame) error {
-	n.recv.frameFormat = frame.FFormat
+func (n *ISO15765Node) recv(frame Frame) error {
+	n.in.frameFormat = frame.FFormat
+	if err := nPduUnpack(
+		n.addrMode, &(n.in.nPDU), frame.ID, uint8(frame.dlc), frame.data,
+	); err != nil {
+		return err
+	}
+	switch n.in.nPDU.nPCI.pCIType {
+	case PCITypeFC:
+		n.recvFC(frame)
+	case PCITypeCF:
+		n.recvCF(frame)
+	case PCITypeSF:
+		n.recvSF(frame)
+	case PCITypeFF:
+		n.recvFF(frame)
+	}
+
+	return nil
+}
+
+func (n *ISO15765Node) recvSF(frame Frame) error {
+	if (n.in.status & IOStreamStatusRXBusy) != 0 {
+		return fmt.Errorf("rx is busy")
+	}
+	copy(n.in.msg, n.in.nPDU.data[:n.in.nPDU.size])
+	n.in.status = IOStreamStatusIdle
+	err := signaling(NIndi, n.in, n.cb, n.in.nPDU.size)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (n *ISO15765Node) recvFF(frame Frame) error {
+	if len(n.in.msg) < int(ISOMsgSize) {
+		return fmt.Errorf("FF data length is must be equal or less than 4095: got=%d", len(n.in.msg))
+	}
+	if (n.in.status & IOStreamStatusRXBusy) != 0 {
+		return fmt.Errorf("rx is busy")
+	}
+	copy(n.in.msg, n.in.nPDU.data[:n.in.nPDU.size])
+	n.in.msgPos = n.in.nPDU.size
+	n.in.cfCnt = 0
+	n.in.wfCnt = 0
+	err := signaling(NFFIndi, n.in, n.cb, n.in.msgSize)
+	if err != nil {
+		return err
+	}
+	err := sendFC()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (n *ISO15765Node) recvCF(frame Frame) error {
+	if (n.in.status & IOStreamStatusRXBusy) == 0 {
+		return fmt.Errorf("consecutiveFrame was received without being expected")
+	}
+	// According to (ref: iso15765-2 p.26) if we are not in progress of reception we should ignore it
+	if (n.in.cfCnt + 1) > 0xFF {
+		n.in.cfCnt = 0
+	} else {
+		n.in.cfCnt += 1
+	}
+	if (n.in.cfCnt & 0x0F) != n.in.nPDU.nPCI.squenceNumber {
+		return fmt.Errorf("consecutiveFrame sequence number was invalid")
+	}
+
+	copy(n.in.msg[n.in.msgPos:], n.in.nPDU.data[:n.in.nPDU.size])
+	n.in.msgPos += n.in.nPDU.size
+
+	if n.in.msgPos >= n.in.msgSize {
+		err := signaling(NIndi, n.in, n.cb, n.in.msgSize)
+		if err != nil {
+			return err
+		}
+		n.in = IOStream{}
+		return nil
+	}
+	if n.cfg.bs != 0 {
+		if n.in.cfCnt == n.cfg.bs {
+			n.in.cfCnt = 0
+			err := sendFC()
+			if err != nil {
+				return err
+			}
+		}
+	}
+	n.in.lastUpdate.nCr = n.cb.GetMs()
+
+	return nil
+}
+
+func (n *ISO15765Node) recvFC(frame Frame) error {
+	if n.out.status != IOStreamStatusTXWaitFC {
+		return fmt.Errorf("upon reception of an unexpected protocol data unit")
+	}
+	switch n.in.nPDU.nPCI.flowStatus {
+	case FlowControlStatusWait:
+		n.out.wfCnt += 1
+		// TODO: fix it
+		if n.checkMaxWfCapacity() != 0 {
+			return nil
+		}
+		n.out.lastUpdate.nBs = n.cb.GetMs()
+	case FlowControlStatusOverFlow:
+		return fmt.Errorf("flow control status is overflow")
+	case FlowControlStatusContinue:
+		n.out.cfgBS = n.in.nPDU.nPCI.blockSize
+		n.out.Stmin = n.in.nPDU.nPCI.stmin
+		setStreamData(n.out, 1, 0, IOStreamStatusTXReady)
+	default:
+		return fmt.Errorf("invalid flow status: %d", n.in.nPDU.nPCI.flowStatus)
+	}
+	return nil
+}
+
+func signaling(tp SignalTP, stream IOStream, cb CallBacks, msgSize uint16) error {
+	// if cb == nil {
+	// 	return fmt.Errorf("callback is must not be nil")
+	// }
+	switch tp {
+	case NIndi:
+		var indn nInd
+		indn.FrameFormat = stream.frameFormat
+		indn.nAI = stream.nPDU.nAI
+		indn.nPCI = stream.nPDU.nPCI
+		stream.status = IOStreamStatusIdle
+		cb.Ind(indn)
+	case NFFIndi:
+		var indn nFFInd
+		indn.FrameFormat = stream.frameFormat
+		indn.nAI = stream.nPDU.nAI
+		indn.nPCI = stream.nPDU.nPCI
+		stream.status = stream.status | IOStreamStatusRXBusy
+		cb.FFInd(indn)
+	case NConf:
+		var cnf nCfm
+		cnf.nAI = stream.nPDU.nAI
+		cnf.nPCI = stream.nPDU.nPCI
+		cb.Cfm(cnf)
+	default:
+		return nil
+	}
+
 	return nil
 }
 

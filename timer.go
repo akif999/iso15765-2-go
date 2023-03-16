@@ -6,6 +6,6 @@ type timer struct {
 	nCs uint32
 }
 
-func timeoutProcess() error {
+func timeout() error {
 	return nil
 }
