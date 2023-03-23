@@ -7,5 +7,5 @@ type CallBacks struct {
 	CfgCfm        func(nCngParamCfm) error
 	PduCustomPack func(nPDU) error
 	GetMs         func() uint32
-	SendFrame     func(IDType, uint32, FrameFormat, uint8, uint8) (uint8, error)
+	SendFrame     func(IDType, uint32, FrameFormat, uint8, []uint8) (uint8, error)
 }

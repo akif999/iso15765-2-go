@@ -106,6 +106,7 @@ func (n *ISO15765Node) recvFC(frame Frame) error {
 	switch n.in.nPDU.nPCI.flowStatus {
 	case FlowControlStatusWait:
 		n.out.wfCnt += 1
+		// TODO: fix it
 		if err := n.checkMaxWfCapacity(); err != nil {
 			n.out.lastUpdate.nBs = n.cb.GetMs()
 			return err
