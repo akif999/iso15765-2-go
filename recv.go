@@ -52,7 +52,7 @@ func (n *ISO15765Node) recvFF(frame Frame) error {
 	if err != nil {
 		return err
 	}
-	err = sendFC()
+	err = n.sendFC()
 	if err != nil {
 		return err
 	}
@@ -88,7 +88,7 @@ func (n *ISO15765Node) recvCF(frame Frame) error {
 	if n.cfg.bs != 0 {
 		if n.in.cfCnt == n.cfg.bs {
 			n.in.cfCnt = 0
-			err := sendFC()
+			err := n.sendFC()
 			if err != nil {
 				return err
 			}
@@ -120,6 +120,35 @@ func (n *ISO15765Node) recvFC(frame Frame) error {
 	default:
 		return fmt.Errorf("invalid flow status: %d", n.in.nPDU.nPCI.flowStatus)
 	}
+	return nil
+}
+
+func (n *ISO15765Node) sendFC() error {
+	var id uint32
+
+	n.out.status = n.out.status | IOStreamStatusTXBusy
+	defer func() { n.out.status = (n.out.status & (^IOStreamStatusTXBusy)) }()
+
+	pdu := &(n.flPdu)
+	(*pdu).nPCI.pCIType = PCITypeFC
+	(*pdu).nPCI.blockSize = n.cfg.bs
+	(*pdu).nPCI.stmin = n.cfg.stmin
+	(*pdu).nAI.addressExtension = n.in.nPDU.nAI.addressExtension
+	(*pdu).nAI.sourceAddress = n.in.nPDU.nAI.sourceAddress
+	(*pdu).nAI.targetAddress = n.in.nPDU.nAI.targetAddress
+	(*pdu).nAI.addrPriority = n.in.nPDU.nAI.addrPriority
+	(*pdu).nAI.targetAddressType = n.in.nPDU.nAI.targetAddressType
+	n.in.cfgBS = n.cfg.bs
+
+	if err := pduPack(n.addrMode, &n.flPdu, &id, n.out.msg); err != nil {
+		return err
+	}
+
+	_, err := n.cb.SendFrame(n.idType, id, n.in.frameFormat, getDataOffset(n.addrMode, PCITypeFC, n.flPdu.size), n.flPdu.data)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
