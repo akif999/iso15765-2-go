@@ -24,3 +24,9 @@ func getDataOffset(mode AddressingMode, pci PCIType, dataSize uint16) uint8 {
 	}
 	return offset
 }
+
+func setStreamData(io IOStream, cf, wf uint8, status IOStreamStatus) {
+	io.cfCnt = cf
+	io.wfCnt = wf
+	io.status = status
+}

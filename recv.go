@@ -52,7 +52,7 @@ func (n *ISO15765Node) recvFF(frame Frame) error {
 	if err != nil {
 		return err
 	}
-	err := sendFC()
+	err = sendFC()
 	if err != nil {
 		return err
 	}
@@ -106,11 +106,10 @@ func (n *ISO15765Node) recvFC(frame Frame) error {
 	switch n.in.nPDU.nPCI.flowStatus {
 	case FlowControlStatusWait:
 		n.out.wfCnt += 1
-		// TODO: fix it
-		if n.checkMaxWfCapacity() != 0 {
-			return nil
+		if err := n.checkMaxWfCapacity(); err != nil {
+			n.out.lastUpdate.nBs = n.cb.GetMs()
+			return err
 		}
-		n.out.lastUpdate.nBs = n.cb.GetMs()
 	case FlowControlStatusOverFlow:
 		return fmt.Errorf("flow control status is overflow")
 	case FlowControlStatusContinue:
@@ -119,6 +118,14 @@ func (n *ISO15765Node) recvFC(frame Frame) error {
 		setStreamData(n.out, 1, 0, IOStreamStatusTXReady)
 	default:
 		return fmt.Errorf("invalid flow status: %d", n.in.nPDU.nPCI.flowStatus)
+	}
+	return nil
+}
+
+func (n *ISO15765Node) checkMaxWfCapacity() error {
+	if n.out.wfCnt >= n.cfg.wf {
+		setStreamData(n.out, 0, 0, IOStreamStatusIdle)
+		return fmt.Errorf("wf capacity overflowed: %d", n.out.wfCnt)
 	}
 	return nil
 }
