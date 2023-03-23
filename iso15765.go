@@ -118,7 +118,7 @@ func (n *ISO15765Node) Send(frame nRequest) error {
 }
 
 func (n *ISO15765Node) Process() error {
-	if err := timeout(); err != nil {
+	if err := n.timeout(); err != nil {
 		return err
 	}
 	for f := range n.inQueue {
